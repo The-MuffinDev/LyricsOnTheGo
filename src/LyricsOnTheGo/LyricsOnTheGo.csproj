@@ -28,9 +28,9 @@
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
     <!-- Branding / versioning. New stack + new repository → fresh 1.0.0. -->
-    <Version>1.0.0</Version>
-    <AssemblyVersion>1.0.0.0</AssemblyVersion>
-    <FileVersion>1.0.0.0</FileVersion>
+    <Version>1.0.1</Version>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
     <Product>LyricsOnTheGo</Product>
     <Company>Luis Anchondo</Company>
     <Authors>Luis Anchondo</Authors>

@@ -9,7 +9,7 @@
 
   <Package Name="LyricsOnTheGo"
            Manufacturer="Luis Anchondo"
-           Version="1.0.0"
+           Version="1.0.1"
            UpgradeCode="3D9B1E54-2C7A-4F8B-9A6E-1B2C3D4E5F60"
            Scope="perMachine">
 

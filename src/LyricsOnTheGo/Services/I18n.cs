@@ -66,7 +66,22 @@ public static class I18n
         ["trayShow"]          = ("Show", "Mostrar"),
         ["trayHide"]          = ("Hide", "Ocultar"),
         ["trayClickThrough"]  = ("Click-through", "Click-through"),
+        ["trayDiagnostics"]   = ("Diagnostics…", "Diagnóstico…"),
         ["trayQuit"]          = ("Quit", "Salir"),
+        // Diagnostics window (README §8).
+        ["diagTitle"]         = ("LyricsOnTheGo — Diagnostics", "LyricsOnTheGo — Diagnóstico"),
+        ["diagProviders"]     = ("Lyrics providers", "Proveedores de letra"),
+        ["diagProvidersHint"] = ("Turn a source on/off live. Disabling a bad source stops it from being used immediately.",
+                                 "Activa/desactiva una fuente en vivo. Al desactivar una fuente mala deja de usarse de inmediato."),
+        ["diagClear"]         = ("Clear log", "Limpiar registro"),
+        ["diagAutoscroll"]    = ("Auto-scroll", "Auto-desplazar"),
+        ["diagColTime"]       = ("Time", "Hora"),
+        ["diagColTrack"]      = ("Track", "Canción"),
+        ["diagColProvider"]   = ("Provider", "Proveedor"),
+        ["diagColResult"]     = ("Result", "Resultado"),
+        ["diagColDetail"]     = ("Match / detail", "Coincidencia / detalle"),
+        ["diagColMs"]         = ("ms", "ms"),
+        ["diagWaiting"]       = ("Waiting for the next song change…", "Esperando el siguiente cambio de canción…"),
     };
 
     /// <summary>Current language: "en" (default) or "es".</summary>

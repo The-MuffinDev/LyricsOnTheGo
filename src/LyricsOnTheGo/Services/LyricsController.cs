@@ -24,7 +24,7 @@ public sealed class LyricsController
     private const int MaxAttempts = 5;
     private const int RetryMs = 2500;
 
-    private readonly LyricsClient _client = new();
+    private readonly LyricsAggregator _client = new(LyricsProviders.Entries);
     private string _currentKey = "";
     private CancellationTokenSource? _cts;
 
@@ -64,6 +64,9 @@ public sealed class LyricsController
         var cached = LyricsCache.Read(cacheKey);
         if (cached is not null)
         {
+            DiagLog.LogCompleted(
+                LyricsAggregator.Track(np.Title, np.Artist), "cache",
+                DiagResult.CacheHit, cached.Source, 0, chosen: true);
             Deliver(cached);
             return;
         }
@@ -71,7 +74,7 @@ public sealed class LyricsController
         for (int attempt = 0; attempt < MaxAttempts && !ct.IsCancellationRequested; attempt++)
         {
             LyricsResult result;
-            try { result = await _client.FetchAsync(np.Title, np.Artist, np.Album, np.DurationMs); }
+            try { result = await _client.FetchAsync(np.Title, np.Artist, np.Album, np.DurationMs, ct); }
             catch { result = LyricsResult.NotFound; }
 
             if (ct.IsCancellationRequested)

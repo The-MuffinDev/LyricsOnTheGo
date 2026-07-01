@@ -59,6 +59,7 @@ public partial class MainWindow : Window
     private int _lastHitY = int.MinValue;
 
     private TrayIcon? _tray;
+    private Diagnostics.DiagnosticsWindow? _diagWindow;
     private bool _pinned = true;   // window starts always-on-top
     private bool _exiting;         // set only by the tray "Quit" path (the real exit)
 
@@ -89,11 +90,11 @@ public partial class MainWindow : Window
         Closing += (_, e) =>
         {
             // Anything but the tray "Quit" (incl. Alt+F4) hides to tray instead of exiting.
-            if (_exiting) return;
+            if (_exiting) { SaveWindowPlacement(); return; }
             e.Cancel = true;
             HideToTray();
         };
-        Closed += (_, _) => { _tray?.Dispose(); _glass?.Close(); };
+        Closed += (_, _) => { _diagWindow?.Close(); _tray?.Dispose(); _glass?.Close(); };
         KeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape) return;
@@ -114,10 +115,52 @@ public partial class MainWindow : Window
         _hwnd = new WindowInteropHelper(this).Handle;
         HwndSource.FromHwnd(_hwnd)?.AddHook(WndProcHook);
 
+        RestoreWindowPlacement();   // apply last size/position BEFORE the glass is placed behind it
+
         var (x, y, w, h) = GetPhysicalRect();
         _glass = new GlassWindow();
         _glass.Start(x, y, w, h);
         SyncGlass();
+    }
+
+    /// <summary>Restore the last window bounds, if any and still on a connected monitor.</summary>
+    private void RestoreWindowPlacement()
+    {
+        var p = WindowPlacementStore.Load();
+        if (p is null || p.Width <= 0 || p.Height <= 0)
+            return;
+
+        var rect = new Native.RECT { left = p.X, top = p.Y, right = p.X + p.Width, bottom = p.Y + p.Height };
+        if (IsOnScreen(rect))
+            Native.SetBounds(_hwnd, p.X, p.Y, p.Width, p.Height);
+    }
+
+    /// <summary>Persist the current window bounds (using the pre-mode rect when in karaoke/fullscreen,
+    /// so we never restore to a full-screen size).</summary>
+    private void SaveWindowPlacement()
+    {
+        if (_hwnd == IntPtr.Zero)
+            return;
+
+        Native.RECT r;
+        if (_karaoke) r = _preKaraokeRect;
+        else if (_fullscreen) r = _preFsRect;
+        else Native.GetWindowRect(_hwnd, out r);
+
+        int w = r.right - r.left, h = r.bottom - r.top;
+        if (w > 0 && h > 0)
+            WindowPlacementStore.Save(new WindowPlacement(r.left, r.top, w, h));
+    }
+
+    /// <summary>True if the rectangle overlaps any connected monitor (guards against off-screen restores).</summary>
+    private static bool IsOnScreen(Native.RECT r)
+    {
+        var rect = new System.Drawing.Rectangle(
+            r.left, r.top, Math.Max(1, r.right - r.left), Math.Max(1, r.bottom - r.top));
+        foreach (var screen in System.Windows.Forms.Screen.AllScreens)
+            if (screen.Bounds.IntersectsWith(rect))
+                return true;
+        return false;
     }
 
     private void SyncGlass()
@@ -355,6 +398,7 @@ public partial class MainWindow : Window
     /// keeps running; only the tray "Quit" item actually exits.</summary>
     private void HideToTray()
     {
+        SaveWindowPlacement();   // remember where/what size we were when the overlay is dismissed
         if (_settingsOpen)
             CloseSettings();
         Hide();
@@ -384,6 +428,22 @@ public partial class MainWindow : Window
     {
         _exiting = true;
         Close();
+    }
+
+    /// <summary>Open the diagnostics window (single instance: reuse + focus if already open).</summary>
+    private void ShowDiagnostics()
+    {
+        if (_diagWindow is null)
+        {
+            _diagWindow = new Diagnostics.DiagnosticsWindow();
+            _diagWindow.Closed += (_, _) => _diagWindow = null;
+            _diagWindow.Show();
+            return;
+        }
+
+        if (_diagWindow.WindowState == WindowState.Minimized)
+            _diagWindow.WindowState = WindowState.Normal;
+        _diagWindow.Activate();
     }
 
     private void OnTogglePin(object sender, RoutedEventArgs e)
@@ -766,6 +826,7 @@ public partial class MainWindow : Window
         _tray = new TrayIcon();
         _tray.ToggleVisibilityRequested += ToggleVisibility;
         _tray.ClickThroughToggled += on => _settings.ClickThrough = on;
+        _tray.DiagnosticsRequested += ShowDiagnostics;
         _tray.QuitRequested += Quit;
         _tray.SetVisibleState(IsVisible);
         _tray.SetClickThroughChecked(_settings.ClickThrough);
