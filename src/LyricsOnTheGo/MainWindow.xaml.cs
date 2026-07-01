@@ -55,6 +55,8 @@ public partial class MainWindow : Window
     private DispatcherTimer? _headerTimer;   // single-shot auto-hide countdown
     private bool _headerHovered;             // hovering the header keeps it open
     private bool _headerShown = true;        // current header visibility (avoids re-animating)
+    private int _lastHitX = int.MinValue;    // last cursor pos (real screen coords) to detect movement
+    private int _lastHitY = int.MinValue;
 
     private TrayIcon? _tray;
     private bool _pinned = true;   // window starts always-on-top
@@ -99,8 +101,9 @@ public partial class MainWindow : Window
             else HideToTray();
         };
 
-        // Header auto-hide: any mouse activity over the overlay briefly reveals the top bar.
-        MouseMove += (_, _) => RevealHeader();
+        // Clicking the overlay reveals the header. Mouse-move reveal is handled in the WM_NCHITTEST
+        // hook keyed off the REAL cursor position — NOT WPF's MouseMove, which also fires when the
+        // lyrics animate under a stationary cursor (which would keep the header from auto-hiding).
         PreviewMouseDown += (_, _) => RevealHeader();
     }
 
@@ -540,10 +543,18 @@ public partial class MainWindow : Window
         if (_lines is null || LyricsViewport.Visibility != Visibility.Visible)
             return;
         StopSmoothScroll();
+
+        // Freeze at the CURRENTLY VISIBLE position: reading Y while an animation (e.g. from Resync)
+        // is holding it gives the on-screen value, but clearing the animation reverts Y to its base.
+        // So capture first, clear, then pin the base to that value — the drag then starts from the
+        // view you actually see, not the last drag's end.
+        double cur = LyricsTranslate.Y;
         LyricsTranslate.BeginAnimation(TranslateTransform.YProperty, null);
+        LyricsTranslate.Y = cur;
+
         _dragScrolling = true;
         _dragStartScreenY = e.GetPosition(this).Y;
-        _dragStartTransY = LyricsTranslate.Y;
+        _dragStartTransY = cur;
         LyricsViewport.CaptureMouse();
     }
 
@@ -699,14 +710,19 @@ public partial class MainWindow : Window
         // the OS excludes it from hit-testing entirely and this hook isn't even called — the mouse
         // falls straight through to whatever is behind. Nothing to do here for that case.
 
-        // WM_NCHITTEST fires across the entire window surface on every mouse move, so it is the
-        // reliable trigger for revealing the auto-hidden header (WPF's MouseMove misses the large
-        // hit-transparent areas of the overlay).
-        RevealHeader();
-
         long lp = lParam.ToInt64();
         int px = (short)(lp & 0xFFFF);
         int py = (short)((lp >> 16) & 0xFFFF);
+
+        // Reveal the header ONLY when the cursor actually MOVES (real screen coords from lParam).
+        // A stationary mouse inside the window then lets the header — and, in karaoke, the cursor —
+        // auto-hide; it comes back as soon as the mouse moves.
+        if (px != _lastHitX || py != _lastHitY)
+        {
+            _lastHitX = px;
+            _lastHitY = py;
+            RevealHeader();
+        }
 
         // Interactive controls (header buttons, settings panel) must receive clicks
         // instead of dragging/resizing the window.
