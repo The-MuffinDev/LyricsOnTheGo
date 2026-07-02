@@ -10,13 +10,13 @@ using LyricsOnTheGo.Models;
 namespace LyricsOnTheGo.Services;
 
 /// <summary>
-/// Fetches lyrics from LRCLIB, tolerant of how different players report metadata. Three
-/// endpoints are queried CONCURRENTLY (not in a cascade, which used to stack three 6 s
-/// timeouts to ~18 s when LRCLIB was slow at peak): exact /api/get, structured
-/// /api/search (track+artist), and a combined free-text /api/search?q=title+artist (the
-/// same shape the website's search box uses, which matches when structured metadata doesn't).
-/// A SYNCED hit wins, preferring the exact get, then structured, then combined-q — each
-/// duration-matched; otherwise the best plain-only hit. Disk cache is consulted by the caller.
+/// Fetches lyrics from the hosted LRCLIB API, tolerant of the varying metadata quality different
+/// players report. Three endpoints are queried concurrently — exact /api/get, structured
+/// /api/search (track+artist), and a free-text /api/search?q=title+artist (the shape the website's
+/// search box uses, which matches when structured metadata does not). Concurrency bounds the worst
+/// case to a single request timeout instead of the sum of all three. A synced hit wins, preferring
+/// the exact get, then structured, then free-text — each duration-matched; otherwise the best
+/// plain-only hit. The disk cache is consulted by the caller, not here.
 /// </summary>
 public sealed class LrclibProvider : ILyricsProvider
 {
@@ -29,14 +29,24 @@ public sealed class LrclibProvider : ILyricsProvider
         PropertyNameCaseInsensitive = true,
     };
 
+    /// <summary>App version (major.minor.patch) pulled from the assembly, so the User-Agent tracks
+    /// the single version defined in the .csproj rather than a hard-coded string.</summary>
+    private static string AppVersion
+    {
+        get
+        {
+            var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            return v is null ? "1.0" : $"{v.Major}.{v.Minor}.{v.Build}";
+        }
+    }
+
     private static HttpClient CreateHttp()
     {
-        // 15 s (not 6): at peak, LRCLIB's structured search can take ~9 s to return — and it DOES
-        // return (often 20 synced hits). A 6 s cap turned those into false "not found"s. Since the
-        // three queries now run concurrently, this is a single 15 s window, not a stacked cascade.
+        // Generous timeout: at peak, LRCLIB's structured search can take ~9 s and still return valid
+        // synced results. Because the three queries run concurrently, this bounds the whole lookup.
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "LyricsOnTheGo/2.0.0 (https://github.com/LuisAnchondo)");
+            $"LyricsOnTheGo/{AppVersion} (https://github.com/LuisAnchondo)");
         return http;
     }
 
@@ -92,7 +102,7 @@ public sealed class LrclibProvider : ILyricsProvider
         if (bestPlain is not null)
             return bestPlain;
 
-        // Report a timeout distinctly from a genuine miss so diagnostics don't cry "not found".
+        // Distinguish a timeout from a genuine miss so diagnostics can report it accurately.
         return timedOut
             ? LyricsResult.NotFound with { TimedOut = true, Detail = "timeout (LRCLIB slow)" }
             : LyricsResult.NotFound;
@@ -133,6 +143,7 @@ public sealed class LrclibProvider : ILyricsProvider
         return (bestSynced, bestPlain);
     }
 
+    /// <summary>Maps an LRCLIB entry to a <see cref="LyricsResult"/>, or null when it carries no lyrics.</summary>
     private LyricsResult? EntryToResult(LrcLibEntry e, string detail)
     {
         if (e.Instrumental)
@@ -160,7 +171,7 @@ public sealed class LrclibProvider : ILyricsProvider
         }
         catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
-            return (default, true); // our own 6 s timeout, not a caller cancellation
+            return (default, true); // the request timeout elapsed, not a caller-requested cancellation
         }
         catch
         {

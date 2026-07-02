@@ -1,4 +1,4 @@
-# Installer (LyricsOnTheGo 1.0.0)
+# Installer (LyricsOnTheGo)
 
 Builds a Windows **`.msi`** with **WiX Toolset v5**. Per-machine x64 install with the standard
 WixUI wizard (branded banner/dialog; the license page is skipped — MIT/open source), Start Menu
@@ -26,17 +26,18 @@ powershell -File installer\build-msi.ps1
 ```
 
 This publishes to `publish\`, ensures the wizard images exist, and compiles
-`dist\LyricsOnTheGo-1.0.0.msi`. If WiX isn't installed it stops after publishing and prints the
+`dist\LyricsOnTheGo-<version>.msi` (the version is read from `<Version>` in
+`LyricsOnTheGo.csproj`). If WiX isn't installed it stops after publishing and prints the
 install command.
 
 ## Upload to GitHub Releases
 With the GitHub CLI (`gh`):
 
 ```powershell
-gh release create v1.0.0 dist\LyricsOnTheGo-1.0.0.msi --title "LyricsOnTheGo 1.0.0" --notes "Native WPF rewrite."
+gh release create v<version> dist\LyricsOnTheGo-<version>.msi --title "LyricsOnTheGo <version>" --notes "..."
 ```
 
-Or via the web UI: Releases → Draft a new release → tag `v1.0.0` → attach `dist\LyricsOnTheGo-1.0.0.msi`.
+Or via the web UI: Releases → Draft a new release → tag `v<version>` → attach `dist\LyricsOnTheGo-<version>.msi`.
 
 ## Files
 - `LyricsOnTheGo.wxs` — WiX v5 source (package, files harvest, shortcuts, branding, UI). Built
@@ -49,6 +50,6 @@ Or via the web UI: Releases → Draft a new release → tag `v1.0.0` → attach 
 - `build-msi.ps1` — one-shot publish + compile.
 
 ## Notes
-- Output name has no language tag (`LyricsOnTheGo-1.0.0.msi`).
+- Output name has no language tag (`LyricsOnTheGo-<version>.msi`).
 - The MSI is **per-machine** (prompts for admin). To ship a smaller MSI that **requires** the
   .NET 8 Desktop Runtime instead, change the publish line in `build-msi.ps1` to `--self-contained false`.

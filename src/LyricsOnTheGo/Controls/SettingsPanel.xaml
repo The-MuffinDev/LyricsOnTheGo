@@ -526,6 +526,46 @@
                     <TextBlock x:Name="CacheStatus" Style="{StaticResource Hint}" Margin="0,6,0,0"
                                Visibility="Collapsed" />
 
+                    <!-- LOCAL DATABASE -->
+                    <TextBlock x:Name="HdrLocalDb" Text="LOCAL DATABASE" Style="{StaticResource GroupTitle}" />
+                    <TextBlock x:Name="HintLocalDb"
+                               Text="Link the offline LRCLIB database for instant, offline lookups."
+                               Style="{StaticResource Hint}" Margin="0,0,0,4" />
+                    <TextBlock Margin="0,0,0,4">
+                        <Hyperlink x:Name="DbDumpsLink" Click="OnDbDumps" Foreground="#17D346" TextDecorations="None">
+                            <Run x:Name="DbDumpsText" Text="Download the database ↗" FontSize="11.5" />
+                        </Hyperlink>
+                    </TextBlock>
+                    <TextBlock x:Name="WarnLocalDb" Text="The uncompressed database is around 117 GB."
+                               Style="{StaticResource Hint}" Foreground="#E8A33C" Margin="0,0,0,8" />
+                    <Border Background="#12FFFFFF" BorderBrush="#1AFFFFFF" BorderThickness="1" CornerRadius="7"
+                            Padding="9,7" Margin="0,0,0,8">
+                        <TextBlock x:Name="LocalDbPathText" Foreground="#B0FFFFFF" FontFamily="Cascadia Code, Consolas"
+                                   FontSize="11" TextWrapping="Wrap" Text="(none)" />
+                    </Border>
+                    <Button x:Name="SelectDbBtn" Style="{StaticResource ActionBtn}" Click="OnSelectDb">
+                        <StackPanel Orientation="Horizontal">
+                            <Viewbox Width="16" Height="16" Margin="0,0,8,0">
+                                <Canvas Width="24" Height="24">
+                                    <Path Style="{StaticResource IconPath}"
+                                          Data="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock x:Name="SelectDbLabel" Text="Select database file…" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <Button x:Name="UnlinkDbBtn" Style="{StaticResource ActionBtn}" Click="OnUnlinkDb" Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <Viewbox Width="16" Height="16" Margin="0,0,8,0">
+                                <Canvas Width="24" Height="24">
+                                    <Path Style="{StaticResource IconPath}" Data="M18 6 6 18 M6 6l12 12" />
+                                </Canvas>
+                            </Viewbox>
+                            <TextBlock x:Name="UnlinkDbLabel" Text="Unlink database" VerticalAlignment="Center" />
+                        </StackPanel>
+                    </Button>
+                    <TextBlock x:Name="LocalDbStatus" Style="{StaticResource Hint}" Margin="0,6,0,0" />
+
                     <!-- RESET -->
                     <Button x:Name="ResetBtn" Style="{StaticResource ActionBtn}" Click="OnReset" Margin="0,18,0,0">
                         <StackPanel Orientation="Horizontal">

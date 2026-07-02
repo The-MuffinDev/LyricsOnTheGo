@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace LyricsOnTheGo.Models;
 
-/// <summary>Result of a lyrics lookup (matches the original's cached shape).</summary>
+/// <summary>Outcome of a lyrics lookup. The non-ignored fields are what gets serialized to the disk cache.</summary>
 public sealed record LyricsResult
 {
     public bool Found { get; init; }

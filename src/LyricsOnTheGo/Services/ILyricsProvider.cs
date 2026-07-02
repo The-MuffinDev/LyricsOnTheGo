@@ -12,8 +12,9 @@ namespace LyricsOnTheGo.Services;
 /// </summary>
 public interface ILyricsProvider
 {
-    /// <summary>Short, stable id used in <see cref="LyricsResult.Source"/> and logs (e.g. "lrclib", "netease").</summary>
+    /// <summary>Short, stable id used in <see cref="LyricsResult.Source"/> and logs (e.g. "lrclib", "lrclib-local").</summary>
     string Name { get; }
 
+    /// <summary>Looks up lyrics for a track; returns <see cref="LyricsResult.NotFound"/> on any failure.</summary>
     Task<LyricsResult> FetchAsync(string title, string artist, string album, double durationMs, CancellationToken ct);
 }

@@ -75,7 +75,74 @@ public partial class SettingsPanel : UserControl
         HintCache.Text = I18n.T("cacheHint");
         ClearCacheLabel.Text = I18n.T("clearCache");
         ClearOffsetsLabel.Text = I18n.T("clearOffsets");
+
+        HdrLocalDb.Text = I18n.T("grpLocalDb").ToUpperInvariant();
+        HintLocalDb.Text = I18n.T("localDbHint");
+        DbDumpsText.Text = I18n.T("localDbDownload");
+        WarnLocalDb.Text = I18n.T("localDbWarn");
+        SelectDbLabel.Text = I18n.T("selectDb");
+        UnlinkDbLabel.Text = I18n.T("unlinkDb");
+        UpdateLocalDbUi();
+
         ResetLabel.Text = I18n.T("reset");
+    }
+
+    /// <summary>Reflect the linked-database state: current path, status, and Unlink availability.</summary>
+    private void UpdateLocalDbUi()
+    {
+        string? path = LocalDbConfig.DbPath;
+        bool linked = LocalDbConfig.IsLinked;
+
+        LocalDbPathText.Text = string.IsNullOrEmpty(path) ? I18n.T("localDbNone") : path;
+        UnlinkDbBtn.IsEnabled = !string.IsNullOrEmpty(path);
+        UnlinkDbBtn.Opacity = string.IsNullOrEmpty(path) ? 0.5 : 1.0;
+
+        // The 117 GB size warning is only relevant before a database is linked.
+        WarnLocalDb.Visibility = string.IsNullOrEmpty(path)
+            ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+
+        if (string.IsNullOrEmpty(path))
+            LocalDbStatus.Text = "";
+        else if (linked)
+            LocalDbStatus.Text = I18n.T("localDbLinked");
+        else
+            LocalDbStatus.Text = I18n.T("localDbMissing");
+        LocalDbStatus.Visibility = string.IsNullOrEmpty(LocalDbStatus.Text)
+            ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
+    }
+
+    private void OnSelectDb(object sender, System.Windows.RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = I18n.T("selectDb"),
+            Filter = "SQLite database (*.sqlite3;*.db;*.sqlite)|*.sqlite3;*.db;*.sqlite|All files (*.*)|*.*",
+            CheckFileExists = true,
+        };
+        if (dialog.ShowDialog() != true)
+            return;
+
+        if (!LocalDbConfig.IsValidDump(dialog.FileName))
+        {
+            LocalDbStatus.Text = I18n.T("localDbInvalid");
+            LocalDbStatus.Visibility = System.Windows.Visibility.Visible;
+            return;
+        }
+
+        LocalDbConfig.SetPath(dialog.FileName);
+        UpdateLocalDbUi();
+    }
+
+    private void OnUnlinkDb(object sender, System.Windows.RoutedEventArgs e)
+    {
+        LocalDbConfig.SetPath(null);
+        UpdateLocalDbUi();
+    }
+
+    private void OnDbDumps(object sender, System.Windows.RoutedEventArgs e)
+    {
+        try { Process.Start(new ProcessStartInfo("https://lrclib.net/db-dumps") { UseShellExecute = true }); }
+        catch { /* ignore */ }
     }
 
     /// <summary>Refresh OS-state controls each time the panel is opened.</summary>
@@ -84,6 +151,7 @@ public partial class SettingsPanel : UserControl
         AutostartToggle.IsChecked = Autostart.IsEnabled();
         CacheStatus.Text = "";
         CacheStatus.Visibility = System.Windows.Visibility.Collapsed;
+        UpdateLocalDbUi();
     }
 
     private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)

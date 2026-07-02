@@ -7,17 +7,23 @@
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
      xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
 
+  <!-- Version comes from the .csproj via build-msi.ps1 (-d ProductVersion=…). The fallback keeps
+       a direct `wix build` from erroring if the define is missing. -->
+  <?ifndef ProductVersion ?>
+  <?define ProductVersion = "0.0.0" ?>
+  <?endif?>
+
   <Package Name="LyricsOnTheGo"
            Manufacturer="Luis Anchondo"
-           Version="1.0.1"
+           Version="$(var.ProductVersion)"
            UpgradeCode="3D9B1E54-2C7A-4F8B-9A6E-1B2C3D4E5F60"
            Scope="perMachine">
 
     <SummaryInformation Description="Real-time synced lyrics overlay" />
 
-    <!-- AllowSameVersionUpgrades: reinstalling 2.0.0 over an existing 2.0.0 fully removes the old
-         install first, so files dropped by an earlier build (e.g. satellite language folders) are
-         cleaned up instead of left orphaned. -->
+    <!-- AllowSameVersionUpgrades: reinstalling the same version over an existing one fully removes
+         the old install first, so files dropped by an earlier build (e.g. satellite language
+         folders) are cleaned up instead of left orphaned. -->
     <MajorUpgrade AllowSameVersionUpgrades="yes"
                   DowngradeErrorMessage="A newer version of [ProductName] is already installed." />
     <MediaTemplate EmbedCab="yes" />

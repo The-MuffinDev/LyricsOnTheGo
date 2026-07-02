@@ -5,28 +5,29 @@ using System.Text.Json;
 
 namespace LyricsOnTheGo.Services;
 
-/// <summary>One registered lyrics source: its provider, fixed priority (0 = highest,
-/// consulted first / wins ties), and a runtime on/off flag the diagnostics window toggles.</summary>
+/// <summary>One registered lyrics source: its provider, current priority (0 = highest,
+/// consulted first / wins ties), and whether it's active for lookups. Both are recomputed as
+/// state changes (e.g. a local database is linked/unlinked).</summary>
 public sealed class ProviderEntry
 {
     public string Name { get; }
     public ILyricsProvider Provider { get; }
-    public int Priority { get; }
-    public bool Enabled { get; set; }
+    public int Priority { get; internal set; }
+    public bool Enabled { get; internal set; }
 
-    public ProviderEntry(string name, ILyricsProvider provider, int priority, bool enabled)
+    public ProviderEntry(string name, ILyricsProvider provider)
     {
         Name = name;
         Provider = provider;
-        Priority = priority;
-        Enabled = enabled;
     }
 }
 
 /// <summary>
-/// App-wide registry of lyrics providers in priority order. Enabled/disabled state is shared
-/// between the lyrics pipeline (which consults it on every lookup) and the diagnostics window
-/// (which flips it live), and is persisted to providers.json so it survives restarts.
+/// App-wide registry of lyrics providers. The pipeline reads it on every lookup; the diagnostics
+/// window flips providers on/off. User intent is persisted to providers.json, but the effective
+/// priority/enabled are derived: when a valid local LRCLIB database is linked, the local provider
+/// is priority 0 (instant, offline) and the hosted API is the fallback; with no database linked,
+/// the API is priority 0 and the local provider is inactive.
 /// </summary>
 public static class LyricsProviders
 {
@@ -34,46 +35,50 @@ public static class LyricsProviders
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "LyricsOnTheGo");
     private static readonly string FilePath = Path.Combine(Dir, "providers.json");
 
-    private static readonly List<ProviderEntry> EntryList = Build();
+    private static readonly ProviderEntry Api = new("lrclib", new LrclibProvider());
+    private static readonly ProviderEntry Local = new("lrclib-local", new LrclibLocalProvider());
 
-    /// <summary>Registered providers, highest priority first.</summary>
+    // Declaration order here is just display order; effective priority is set in Recompute().
+    private static readonly List<ProviderEntry> EntryList = new() { Api, Local };
+
+    // Persisted user intent (name -> wanted-on), separate from the effective Enabled flag.
+    private static readonly Dictionary<string, bool> UserEnabled = LoadEnabled();
+
+    static LyricsProviders()
+    {
+        LocalDbConfig.Changed += Recompute;
+        Recompute();
+    }
+
     public static IReadOnlyList<ProviderEntry> Entries => EntryList;
 
-    /// <summary>Raised after any provider is enabled/disabled, so open UI can refresh.</summary>
+    /// <summary>Raised after any provider's priority/enabled changes, so open UI can refresh.</summary>
     public static event Action? Changed;
 
+    /// <summary>Records the user's on/off choice for a provider, persists it, and re-derives state.</summary>
     public static void SetEnabled(string name, bool enabled)
     {
-        foreach (var e in EntryList)
-        {
-            if (e.Name != name || e.Enabled == enabled)
-                continue;
-            e.Enabled = enabled;
-            Save();
-            Changed?.Invoke();
-            return;
-        }
+        UserEnabled[name] = enabled;
+        SaveEnabled();
+        Recompute();
     }
 
-    // Declaration order defines priority (0 = highest). To add a source later, drop another
-    // ILyricsProvider in this array — the aggregator, registry persistence, and diagnostics
-    // window all pick it up automatically. (NetEase was removed: too few reliable hits.)
-    private static List<ProviderEntry> Build()
+    /// <summary>Recomputes effective priority + enabled from the linked-database state and user intent.</summary>
+    private static void Recompute()
     {
-        var saved = LoadEnabled();
-        var providers = new (string Name, ILyricsProvider Provider)[]
-        {
-            ("lrclib", new LrclibProvider()),
-        };
+        bool linked = LocalDbConfig.IsLinked;
 
-        var list = new List<ProviderEntry>(providers.Length);
-        for (int i = 0; i < providers.Length; i++)
-        {
-            bool enabled = !saved.TryGetValue(providers[i].Name, out bool on) || on; // default: enabled
-            list.Add(new ProviderEntry(providers[i].Name, providers[i].Provider, i, enabled));
-        }
-        return list;
+        if (linked) { Local.Priority = 0; Api.Priority = 1; }
+        else        { Api.Priority = 0; Local.Priority = 1; }
+
+        Api.Enabled = WantsOn("lrclib");
+        // The local provider only participates when a valid database is actually linked.
+        Local.Enabled = linked && WantsOn("lrclib-local");
+
+        Changed?.Invoke();
     }
+
+    private static bool WantsOn(string name) => !UserEnabled.TryGetValue(name, out bool on) || on; // default: on
 
     private static Dictionary<string, bool> LoadEnabled()
     {
@@ -90,15 +95,12 @@ public static class LyricsProviders
         return new Dictionary<string, bool>();
     }
 
-    private static void Save()
+    private static void SaveEnabled()
     {
         try
         {
             Directory.CreateDirectory(Dir);
-            var map = new Dictionary<string, bool>();
-            foreach (var e in EntryList)
-                map[e.Name] = e.Enabled;
-            File.WriteAllText(FilePath, JsonSerializer.Serialize(map));
+            File.WriteAllText(FilePath, JsonSerializer.Serialize(UserEnabled));
         }
         catch { /* best-effort */ }
     }

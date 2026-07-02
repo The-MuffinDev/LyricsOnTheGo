@@ -27,15 +27,21 @@
          framework-string folders from the publish output. -->
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>
 
-    <!-- Branding / versioning. New stack + new repository → fresh 1.0.0. -->
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
+    <!-- SINGLE SOURCE OF TRUTH for the app version. AssemblyVersion, FileVersion and
+         InformationalVersion all derive from this; the User-Agent reads it at runtime; and the
+         installer (installer\build-msi.ps1) parses it from here too. Change it only here. -->
+    <Version>1.1.0</Version>
     <Product>LyricsOnTheGo</Product>
     <Company>Luis Anchondo</Company>
     <Authors>Luis Anchondo</Authors>
     <Copyright>Copyright © Luis Anchondo. MIT License.</Copyright>
     <Description>Real-time synced lyrics overlay for Windows.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Optional offline mode: open the local LRCLIB SQLite dump directly (bundles the native
+         e_sqlite3 with FTS5 — ~2 MB). The database itself stays external. -->
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="8.0.10" />
+  </ItemGroup>
 
 </Project>

@@ -6,9 +6,9 @@ namespace LyricsOnTheGo.Services;
 
 /// <summary>
 /// System tray icon (README §3.1) built on the framework's <see cref="NotifyIcon"/> — no
-/// external dependency. Menu: Show/Hide, Click-through (checkable), Quit. Left-click toggles
-/// visibility. Labels follow the current language; the click-through item mirrors the setting
-/// and is the recovery path when the overlay is click-through (README §3.7).
+/// external dependency. Menu: Show/Hide, Click-through (checkable), Diagnostics, Quit. Left-click
+/// toggles visibility. Labels follow the current language; the click-through item mirrors the
+/// setting and is the recovery path when the overlay is click-through (README §3.7).
 /// </summary>
 public sealed class TrayIcon : IDisposable
 {

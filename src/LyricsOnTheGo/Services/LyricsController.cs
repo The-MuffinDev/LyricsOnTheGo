@@ -6,17 +6,20 @@ using LyricsOnTheGo.Models;
 
 namespace LyricsOnTheGo.Services;
 
+/// <summary>The kind of lyrics state currently shown for a track.</summary>
 public enum LyricsKind { NoTrack, Searching, Synced, Plain, Instrumental, NotFound, OnlyUnsynced }
 
+/// <summary>Immutable snapshot of the lyrics state, carrying synced lines or plain text when applicable.</summary>
 public sealed record LyricsState(
     LyricsKind Kind,
     IReadOnlyList<LyricLine>? Lines = null,
     string? PlainText = null);
 
 /// <summary>
-/// Drives lyrics lookup for the current track: disk cache first, then a bounded retry
-/// state machine against LRCLIB (max 5 attempts, 2500 ms backoff). Raises <see cref="Changed"/>
-/// on the calling (UI) thread as the state progresses. Plain text is only surfaced when
+/// Drives lyrics lookup for the current track: consults the disk cache first (skipped when a local
+/// database is linked, which is fast enough not to need it), then runs a bounded retry loop against
+/// the provider pipeline (max 5 attempts, 2500 ms backoff). Raises <see cref="Changed"/> on the
+/// calling (UI) thread as the state progresses. Plain text is surfaced only when
 /// <see cref="PlainFallback"/> is on; otherwise the track reports OnlyUnsynced.
 /// </summary>
 public sealed class LyricsController
@@ -32,6 +35,7 @@ public sealed class LyricsController
 
     public event Action<LyricsState>? Changed;
 
+    /// <summary>Reacts to a now-playing change: cancels any in-flight lookup and starts a new one when the track changes.</summary>
     public void OnTrack(NowPlaying np)
     {
         if (!np.HasSession || (string.IsNullOrWhiteSpace(np.Title) && string.IsNullOrWhiteSpace(np.Artist)))
@@ -61,14 +65,21 @@ public sealed class LyricsController
 
         string cacheKey = LyricsCache.Key(np.Title, np.Artist, np.Album, np.DurationMs);
 
-        var cached = LyricsCache.Read(cacheKey);
-        if (cached is not null)
+        // With a local database linked, lookups are already instant — bypass the disk cache
+        // entirely so results stay fresh and every lookup is timed live in diagnostics.
+        bool useCache = !LocalDbConfig.IsLinked;
+
+        if (useCache)
         {
-            DiagLog.LogCompleted(
-                LyricsAggregator.Track(np.Title, np.Artist), "cache",
-                DiagResult.CacheHit, cached.Source, 0, chosen: true);
-            Deliver(cached);
-            return;
+            var cached = LyricsCache.Read(cacheKey);
+            if (cached is not null)
+            {
+                DiagLog.LogCompleted(
+                    LyricsAggregator.Track(np.Title, np.Artist), "cache",
+                    DiagResult.CacheHit, cached.Source, 0, chosen: true);
+                Deliver(cached);
+                return;
+            }
         }
 
         for (int attempt = 0; attempt < MaxAttempts && !ct.IsCancellationRequested; attempt++)
@@ -82,7 +93,8 @@ public sealed class LyricsController
 
             if (result.Found)
             {
-                LyricsCache.Write(cacheKey, result);
+                if (useCache)
+                    LyricsCache.Write(cacheKey, result);
                 Deliver(result);
                 return;
             }
@@ -95,6 +107,7 @@ public sealed class LyricsController
             Raise(new LyricsState(LyricsKind.NotFound));
     }
 
+    /// <summary>Translates a fetched result into a <see cref="LyricsState"/> and raises it, parsing synced LRC into lines.</summary>
     private void Deliver(LyricsResult result)
     {
         if (result.Instrumental)

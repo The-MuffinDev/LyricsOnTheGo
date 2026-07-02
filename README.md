@@ -122,7 +122,7 @@ To produce the MSI installer (WiX Toolset v5, see [`installer/`](installer/READM
 ```powershell
 dotnet tool install --global wix
 wix extension add -g WixToolset.UI.wixext
-powershell -File installer\build-msi.ps1   # -> dist\LyricsOnTheGo-1.0.0.msi
+powershell -File installer\build-msi.ps1   # -> dist\LyricsOnTheGo-<version>.msi
 ```
 
 ## Usage

@@ -9,8 +9,8 @@ namespace LyricsOnTheGo.Services;
 
 /// <summary>
 /// Queries the enabled <see cref="ProviderEntry"/>s in parallel and returns the best result,
-/// biased toward speed (the reason this exists: a single slow source used to make lyrics
-/// arrive after the song had already started).
+/// biased toward latency: it returns as soon as a good synced result is available rather than
+/// waiting for every provider to finish.
 ///
 /// Strategy:
 ///  - The instant the highest-priority provider (priority 0) returns SYNCED lyrics, return it.
@@ -30,9 +30,12 @@ public sealed class LyricsAggregator
 
     public LyricsAggregator(IReadOnlyList<ProviderEntry> entries) => _entries = entries;
 
+    /// <summary>Formats the "Title — Artist" label used for diagnostics and cache-hit rows.</summary>
     public static string Track(string title, string artist) =>
         string.IsNullOrWhiteSpace(artist) ? title : $"{title} — {artist}";
 
+    /// <summary>Runs all enabled providers concurrently and returns the best result, recording each
+    /// call to <see cref="DiagLog"/> and marking the winner.</summary>
     public async Task<LyricsResult> FetchAsync(string title, string artist, string album, double durationMs, CancellationToken ct)
     {
         string track = Track(title, artist);
@@ -111,11 +114,12 @@ public sealed class LyricsAggregator
         return current;
     }
 
+    /// <summary>Runs a single provider, timing it and recording the outcome to its diagnostics row.</summary>
     private static async Task<CallResult> RunAsync(
         ProviderEntry entry, string track, string title, string artist, string album, double durationMs, CancellationToken ct)
     {
-        // Log the row NOW, before the call runs, so diagnostics shows it "searching…" with a
-        // live ms from the very start — not only once the provider returns or times out.
+        // Register the diagnostics row before the call runs, so it appears immediately as
+        // "searching…" with a live elapsed timer rather than only after the provider returns.
         var call = DiagLog.Begin(track, entry.Name);
         var sw = Stopwatch.StartNew();
         LyricsResult result;
@@ -132,6 +136,7 @@ public sealed class LyricsAggregator
         return new CallResult(entry, result, sw.ElapsedMilliseconds, call);
     }
 
+    /// <summary>Maps a provider result to the outcome shown in the diagnostics log.</summary>
     private static DiagResult Classify(LyricsResult r)
     {
         if (!r.Found)

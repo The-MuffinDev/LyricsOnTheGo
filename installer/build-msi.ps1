@@ -1,7 +1,10 @@
 # Builds the LyricsOnTheGo MSI end-to-end:
 #   1) publishes a self-contained build (target PC needs no .NET runtime),
 #   2) ensures the branded wizard images exist,
-#   3) compiles installer\LyricsOnTheGo.wxs into dist\LyricsOnTheGo-1.0.0.msi with WiX v5.
+#   3) compiles installer\LyricsOnTheGo.wxs into dist\LyricsOnTheGo-<version>.msi with WiX v5.
+#
+# The version is read from the single source of truth — <Version> in LyricsOnTheGo.csproj — so
+# nothing here needs editing on a version bump.
 #
 # One-time prerequisites (install manually):
 #   dotnet tool install --global wix
@@ -13,6 +16,12 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
+
+# Single source of truth: the <Version> element in the project file.
+$csprojPath = Join-Path $root 'src\LyricsOnTheGo\LyricsOnTheGo.csproj'
+$version = @(([xml](Get-Content $csprojPath)).Project.PropertyGroup.Version | Where-Object { $_ })[0]
+if (-not $version) { throw "Could not read <Version> from $csprojPath" }
+Write-Host "== Version $version (from LyricsOnTheGo.csproj) ==" -ForegroundColor Cyan
 
 Write-Host '== Stopping any running instance ==' -ForegroundColor Cyan
 Get-Process LyricsOnTheGo -ErrorAction SilentlyContinue | Stop-Process -Force
@@ -47,7 +56,8 @@ Write-Host '== Building MSI ==' -ForegroundColor Cyan
 Push-Location $PSScriptRoot
 try {
     wix build LyricsOnTheGo.wxs -arch x64 -ext WixToolset.UI.wixext `
-        -o ..\dist\LyricsOnTheGo-1.0.0.msi
+        -d ProductVersion=$version `
+        -o ..\dist\LyricsOnTheGo-$version.msi
     if ($LASTEXITCODE -ne 0) { throw 'wix build failed' }
 }
 finally { Pop-Location }
