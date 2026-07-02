@@ -15,7 +15,9 @@ public sealed class TrayIcon : IDisposable
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _showHide;
     private readonly ToolStripMenuItem _clickThrough;
+#if DEBUG
     private readonly ToolStripMenuItem _diagnostics;
+#endif
     private readonly ToolStripMenuItem _quit;
 
     private bool _shown = true;
@@ -26,8 +28,10 @@ public sealed class TrayIcon : IDisposable
     /// <summary>The click-through menu item was toggled; the bool is the new desired state.</summary>
     public event Action<bool>? ClickThroughToggled;
 
-    /// <summary>The Diagnostics menu item was activated.</summary>
+#if DEBUG
+    /// <summary>The Diagnostics menu item was activated (developer/Debug builds only).</summary>
     public event Action? DiagnosticsRequested;
+#endif
 
     /// <summary>The Quit menu item was activated (the only real exit).</summary>
     public event Action? QuitRequested;
@@ -40,8 +44,10 @@ public sealed class TrayIcon : IDisposable
         _clickThrough = new ToolStripMenuItem { CheckOnClick = true };
         _clickThrough.Click += (_, _) => ClickThroughToggled?.Invoke(_clickThrough.Checked);
 
+#if DEBUG
         _diagnostics = new ToolStripMenuItem();
         _diagnostics.Click += (_, _) => DiagnosticsRequested?.Invoke();
+#endif
 
         _quit = new ToolStripMenuItem();
         _quit.Click += (_, _) => QuitRequested?.Invoke();
@@ -49,7 +55,9 @@ public sealed class TrayIcon : IDisposable
         var menu = new ContextMenuStrip();
         menu.Items.Add(_showHide);
         menu.Items.Add(_clickThrough);
+#if DEBUG
         menu.Items.Add(_diagnostics);
+#endif
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add(_quit);
 
@@ -84,7 +92,9 @@ public sealed class TrayIcon : IDisposable
     {
         _showHide.Text = _shown ? I18n.T("trayHide") : I18n.T("trayShow");
         _clickThrough.Text = I18n.T("trayClickThrough");
+#if DEBUG
         _diagnostics.Text = I18n.T("trayDiagnostics");
+#endif
         _quit.Text = I18n.T("trayQuit");
     }
 

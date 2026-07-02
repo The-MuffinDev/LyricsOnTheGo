@@ -1,3 +1,6 @@
+// Developer-only diagnostics window. Excluded from Release builds (and therefore from the MSI), so
+// end users never see it — the tray entry and all references are likewise gated with #if DEBUG.
+#if DEBUG
 using System;
 using System.Collections.ObjectModel;
 using System.Globalization;
@@ -301,3 +304,4 @@ public sealed class DiagnosticsWindow : Window
             => throw new NotSupportedException();
     }
 }
+#endif

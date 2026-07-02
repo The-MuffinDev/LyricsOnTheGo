@@ -104,8 +104,27 @@ To build from source you also need the [.NET 8 SDK](https://dotnet.microsoft.com
 
 ## Install
 
-Download the latest installer from the [**Releases**](../../releases/latest) page and run it, then
-open your music player and start a song. That's all.
+1. **Download the latest installer** — grab the `LyricsOnTheGo-<version>.msi` from the
+   [**latest release**](https://github.com/LuisAnchondo/LyricsOnTheGo/releases/latest) and run it.
+2. Open your music player and start a song. That's all.
+
+Every version and its release notes are on the
+[**Releases**](https://github.com/LuisAnchondo/LyricsOnTheGo/releases) page.
+
+## Offline mode — local LRCLIB database (optional)
+
+By default, lyrics are fetched from the public [LRCLIB](https://lrclib.net) API, which can slow down
+or time out at peak hours. For **instant, fully offline** lookups you can link the complete LRCLIB
+database and read lyrics straight from disk — no network requests, and the app is never left waiting
+on the public API.
+
+1. Download the database dump from [**lrclib.net/db-dumps**](https://lrclib.net/db-dumps) and
+   decompress it (**~117 GB** uncompressed).
+2. In the app: **Settings → Local database → Select database file…** and pick the `db.sqlite3`.
+
+Once linked, the local database becomes the primary source and results are effectively
+instantaneous; the public API is kept only as an automatic fallback for songs newer than your dump.
+The file is opened read-only (nothing is written to it) and can be unlinked at any time.
 
 ## Build from source
 

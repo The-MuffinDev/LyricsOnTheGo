@@ -59,7 +59,9 @@ public partial class MainWindow : Window
     private int _lastHitY = int.MinValue;
 
     private TrayIcon? _tray;
+#if DEBUG
     private Diagnostics.DiagnosticsWindow? _diagWindow;
+#endif
     private bool _pinned = true;   // window starts always-on-top
     private bool _exiting;         // set only by the tray "Quit" path (the real exit)
 
@@ -94,7 +96,14 @@ public partial class MainWindow : Window
             e.Cancel = true;
             HideToTray();
         };
-        Closed += (_, _) => { _diagWindow?.Close(); _tray?.Dispose(); _glass?.Close(); };
+        Closed += (_, _) =>
+        {
+#if DEBUG
+            _diagWindow?.Close();
+#endif
+            _tray?.Dispose();
+            _glass?.Close();
+        };
         KeyDown += (_, e) =>
         {
             if (e.Key != Key.Escape) return;
@@ -430,7 +439,9 @@ public partial class MainWindow : Window
         Close();
     }
 
-    /// <summary>Open the diagnostics window (single instance: reuse + focus if already open).</summary>
+#if DEBUG
+    /// <summary>Open the diagnostics window (single instance: reuse + focus if already open).
+    /// Debug builds only — excluded from Release/the MSI so end users never see it.</summary>
     private void ShowDiagnostics()
     {
         if (_diagWindow is null)
@@ -445,6 +456,7 @@ public partial class MainWindow : Window
             _diagWindow.WindowState = WindowState.Normal;
         _diagWindow.Activate();
     }
+#endif
 
     private void OnTogglePin(object sender, RoutedEventArgs e)
     {
@@ -826,7 +838,9 @@ public partial class MainWindow : Window
         _tray = new TrayIcon();
         _tray.ToggleVisibilityRequested += ToggleVisibility;
         _tray.ClickThroughToggled += on => _settings.ClickThrough = on;
+#if DEBUG
         _tray.DiagnosticsRequested += ShowDiagnostics;
+#endif
         _tray.QuitRequested += Quit;
         _tray.SetVisibleState(IsVisible);
         _tray.SetClickThroughChecked(_settings.ClickThrough);
