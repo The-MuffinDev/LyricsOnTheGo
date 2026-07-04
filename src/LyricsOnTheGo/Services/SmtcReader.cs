@@ -34,6 +34,7 @@ public sealed class SmtcReader
 
         try
         {
+            string appId = session.SourceAppUserModelId ?? "";
             var media = await session.TryGetMediaPropertiesAsync();
             var timeline = session.GetTimelineProperties();
             var playback = session.GetPlaybackInfo();
@@ -59,6 +60,8 @@ public sealed class SmtcReader
             return new NowPlaying
             {
                 HasSession = true,
+                SourceAppId = appId,
+                IsBrowser = BrowserDetect.IsBrowser(appId),
                 Title = media?.Title ?? "",
                 Artist = media?.Artist ?? "",
                 Album = media?.AlbumTitle ?? "",

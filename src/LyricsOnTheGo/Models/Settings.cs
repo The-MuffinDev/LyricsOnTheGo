@@ -30,7 +30,7 @@ public sealed class Settings : INotifyPropertyChanged
     private int _fontSize = 24;        // 14–64
     private int _dim = 45;             // 10–90, step 5
     private string _align = "left";    // left | center
-    private int _offset;               // −4000…+4000 ms, step 50 (inverted)
+    private int _offset;               // −6000…+6000 ms, step 50 (inverted)
     private bool _clickThrough;
     private bool _plainFallback = true;
     private bool _autoHideHeader = true;
@@ -47,7 +47,7 @@ public sealed class Settings : INotifyPropertyChanged
     // Offset is per-song (persisted by OffsetStore, not globally) so a tuned song doesn't shift
     // every other correctly-synced track. Excluded from settings.json.
     [JsonIgnore]
-    public int Offset { get => _offset; set => Set(ref _offset, Math.Clamp(value, -4000, 4000)); }
+    public int Offset { get => _offset; set => Set(ref _offset, Math.Clamp(value, -6000, 6000)); }
     public bool ClickThrough { get => _clickThrough; set => Set(ref _clickThrough, value); }
     public bool PlainFallback { get => _plainFallback; set => Set(ref _plainFallback, value); }
     public bool AutoHideHeader { get => _autoHideHeader; set => Set(ref _autoHideHeader, value); }

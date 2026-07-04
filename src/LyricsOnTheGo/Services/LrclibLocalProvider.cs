@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Text;
 using System.Threading;
@@ -21,27 +20,28 @@ public sealed class LrclibLocalProvider : ILyricsProvider
 {
     public string Name => "lrclib-local";
 
-    public async Task<LyricsResult> FetchAsync(string title, string artist, string album, double durationMs, CancellationToken ct)
+    public async Task<LyricsResult> FetchAsync(LyricsQuery query, CancellationToken ct)
     {
         string? db = LocalDbConfig.DbPath;
-        if (string.IsNullOrEmpty(db) || !File.Exists(db) || string.IsNullOrWhiteSpace(title))
+        if (string.IsNullOrEmpty(db) || !File.Exists(db) || string.IsNullOrWhiteSpace(query.Title))
             return LyricsResult.NotFound;
 
         try
         {
             // SQLite calls are synchronous/blocking; keep them off the aggregator's path.
-            return await Task.Run(() => Query(db!, title, artist, durationMs), ct);
+            return await Task.Run(() => Query(db!, query), ct);
         }
         catch (OperationCanceledException) { return LyricsResult.NotFound; }
         catch { return LyricsResult.NotFound; }
     }
 
-    /// <summary>Opens the dump read-only and resolves the best result: exact match first, FTS5 second.</summary>
-    private static LyricsResult Query(string db, string title, string artist, double durationMs)
+    /// <summary>Opens the dump read-only and resolves the best result: exact match first, FTS5 second.
+    /// Browser sources skip the artist entirely — see <see cref="BrowserQuery"/>.</summary>
+    private static LyricsResult Query(string db, LyricsQuery query)
     {
-        double target = durationMs / 1000.0;
-        string nameLower = PrepareInput(title);
-        string artistLower = PrepareInput(artist);
+        double target = query.DurationMs / 1000.0;
+        string nameLower = TextNorm.Normalize(query.Title);
+        string artistLower = TextNorm.Normalize(query.Artist);
 
         var cs = new SqliteConnectionStringBuilder
         {
@@ -58,6 +58,9 @@ public sealed class LrclibLocalProvider : ILyricsProvider
             pragma.CommandText = "PRAGMA query_only=ON; PRAGMA temp_store=MEMORY; PRAGMA mmap_size=268435456;";
             pragma.ExecuteNonQuery();
         }
+
+        if (query.FromBrowser)
+            return BrowserQuery(conn, query.Title, target);
 
         LyricsResult? instrumental = null;
         LyricsResult? bestPlain = null;
@@ -105,6 +108,91 @@ LIMIT 1";
         return r.Read() ? RowToResult(r, target, "local get (exact)") : null;
     }
 
+    /// <summary>
+    /// Browser mode: the reported artist is untrusted (often the uploader/channel), so both
+    /// passes are artist-free FTS over the whole tracks_fts table — bare quoted terms, so the
+    /// title's words can match split across the name and artist columns, like the website's
+    /// search box. Both passes (raw video title + cleaned version) are merged into ONE candidate
+    /// pool ranked by (track name contained in the video title, duration proximity, pass) — the
+    /// raw pass can rank a wrong song high on decoration/artist tokens while the cleaned pass
+    /// holds a near-exact match, so neither pass may win on order alone.
+    /// </summary>
+    private static LyricsResult BrowserQuery(SqliteConnection conn, string title, double target)
+    {
+        string raw = TextNorm.Normalize(title);
+        string cleaned = TextNorm.Normalize(TitleCleaner.Clean(title));
+
+        var passes = new List<(string Match, string Detail)>();
+        if (raw.Length > 0)
+            passes.Add((AnyColumnMatch(raw), "local search (video title)"));
+        if (cleaned.Length > 0 && cleaned != raw)
+            passes.Add((AnyColumnMatch(cleaned), "local search (cleaned title)"));
+
+        var titleTokens = TextNorm.TokenSet(title);
+
+        LyricsResult? bestSynced = null, bestPlain = null;
+        var syncedScore = WorstScore;
+        var plainScore = WorstScore;
+
+        for (int pass = 0; pass < passes.Count; pass++)
+        {
+            using var cmd = conn.CreateCommand();
+            cmd.CommandText = FtsSql;
+            cmd.Parameters.AddWithValue("$q", passes[pass].Match);
+
+            using var r = cmd.ExecuteReader();
+            while (r.Read())
+            {
+                var res = RowToResult(r, target, passes[pass].Detail);
+                if (res is null)
+                    continue;
+
+                string name = r.IsDBNull(3) ? "" : r.GetString(3);
+                double dur = r.IsDBNull(5) ? 0 : r.GetDouble(5);
+                double diff = (target > 0 && dur > 0) ? Math.Abs(dur - target) : double.MaxValue;
+                var score = (TextNorm.TitleContains(titleTokens, name), diff, pass);
+
+                if (!string.IsNullOrWhiteSpace(res.Synced))
+                {
+                    if (Better(score, syncedScore)) { bestSynced = res; syncedScore = score; }
+                }
+                else
+                {
+                    if (Better(score, plainScore)) { bestPlain = res; plainScore = score; }
+                }
+            }
+        }
+
+        return bestSynced ?? bestPlain ?? LyricsResult.NotFound;
+    }
+
+    private static readonly (bool Match, double Diff, int Pass) WorstScore = (false, double.MaxValue, int.MaxValue);
+
+    /// <summary>Candidate ranking for browser mode: title containment dominates, then duration
+    /// proximity; the earlier pass (raw video title) only breaks exact ties.</summary>
+    private static bool Better((bool Match, double Diff, int Pass) a, (bool Match, double Diff, int Pass) b)
+    {
+        if (a.Match != b.Match)
+            return a.Match;
+        if (Math.Abs(a.Diff - b.Diff) > 0.001)
+            return a.Diff < b.Diff;
+        return a.Pass < b.Pass;
+    }
+
+    /// <summary>Builds an unscoped FTS5 MATCH from prepared text: each word individually quoted,
+    /// implicitly ANDed, free to match in any indexed column.</summary>
+    private static string AnyColumnMatch(string prepared)
+    {
+        var sb = new StringBuilder(prepared.Length + 16);
+        foreach (var term in prepared.Split(' ', StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (sb.Length > 0)
+                sb.Append(' ');
+            sb.Append('"').Append(term).Append('"');
+        }
+        return sb.ToString();
+    }
+
     /// <summary>Full-text fallback over tracks_fts; returns the closest-duration synced hit and a plain fallback.</summary>
     private static (LyricsResult? Synced, LyricsResult? Plain) FtsSearch(
         SqliteConnection conn, string nameLower, string artistLower, double target)
@@ -118,12 +206,22 @@ LIMIT 1";
         if (artistLower.Length > 0)
             match += $" AND (artist_name_lower : \"{artistLower}\")";
 
-        using var cmd = conn.CreateCommand();
-        cmd.CommandText = @"
+        return RunFts(conn, match, target, "local search (FTS)");
+    }
+
+    /// <summary>Top-20-by-rank FTS5 hits joined with their latest lyrics; shared by both FTS paths.</summary>
+    private const string FtsSql = @"
 SELECT l.plain_lyrics, l.synced_lyrics, l.instrumental, t.name, t.artist_name, t.duration
 FROM (SELECT rowid FROM tracks_fts WHERE tracks_fts MATCH $q ORDER BY rank LIMIT 20) s
 JOIN tracks t ON t.id = s.rowid
 LEFT JOIN lyrics l ON t.last_lyrics_id = l.id";
+
+    /// <summary>Runs an FTS5 MATCH (top 20 by rank) and ranks rows: closest-duration synced hit plus a plain fallback.</summary>
+    private static (LyricsResult? Synced, LyricsResult? Plain) RunFts(
+        SqliteConnection conn, string match, double target, string detail)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = FtsSql;
         cmd.Parameters.AddWithValue("$q", match);
 
         LyricsResult? bestSynced = null;
@@ -136,7 +234,7 @@ LEFT JOIN lyrics l ON t.last_lyrics_id = l.id";
             double dur = r.IsDBNull(5) ? 0 : r.GetDouble(5);
             double diff = (target > 0 && dur > 0) ? Math.Abs(dur - target) : double.MaxValue;
 
-            var res = RowToResult(r, target, "local search (FTS)");
+            var res = RowToResult(r, target, detail);
             if (res is null)
                 continue;
 
@@ -178,68 +276,13 @@ LEFT JOIN lyrics l ON t.last_lyrics_id = l.id";
 
     private static string BuildDetail(string prefix, string name, string artist, double dur, double target)
     {
-        string delta = (target > 0 && dur > 0) ? $" (Δ{Math.Abs(dur - target):0.0}s)" : "";
+        string duration = dur > 0
+            ? $" · {(int)(dur / 60)}:{(int)dur % 60:00}" + (target > 0 ? $" (Δ{Math.Abs(dur - target):0.0}s)" : "")
+            : "";
         string who = artist.Length > 0 ? $"“{name}” · {artist}" : $"“{name}”";
-        return $"{prefix}: {who}{delta}";
+        return $"{prefix}: {who}{duration}";
     }
 
-    // Port of the LRCLIB server's prepare_input normalization, which must match exactly for the
-    // equality-based ExactGet to hit: unaccent, punctuation to spaces, strip apostrophes, lowercase,
-    // and collapse whitespace. The server stores name_lower/artist_name_lower already normalized.
-
-    private static readonly HashSet<char> PunctToSpace = new(new[]
-    {
-        '`', '~', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '|', '+', '-', '=', '?',
-        ';', ':', '"', ',', '.', '<', '>', '{', '}', '[', ']', '\\', '/', ' ', '\n',
-    });
-
-    private static string PrepareInput(string input)
-    {
-        if (string.IsNullOrEmpty(input))
-            return "";
-
-        string deburred = RemoveDiacritics(input);
-        var sb = new StringBuilder(deburred.Length);
-        foreach (char c in deburred)
-        {
-            if (c == '\'' || c == '’')
-                continue; // apostrophes are removed, not spaced
-            sb.Append(PunctToSpace.Contains(c) ? ' ' : c);
-        }
-
-        return CollapseWhitespace(sb.ToString().ToLowerInvariant());
-    }
-
-    private static string RemoveDiacritics(string text)
-    {
-        string norm = text.Normalize(NormalizationForm.FormD);
-        var sb = new StringBuilder(norm.Length);
-        foreach (char c in norm)
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-                sb.Append(c);
-        return sb.ToString().Normalize(NormalizationForm.FormC);
-    }
-
-    private static string CollapseWhitespace(string s)
-    {
-        var sb = new StringBuilder(s.Length);
-        bool prevSpace = false;
-        foreach (char c in s)
-        {
-            if (char.IsWhiteSpace(c))
-            {
-                if (!prevSpace && sb.Length > 0)
-                    sb.Append(' ');
-                prevSpace = true;
-            }
-            else
-            {
-                sb.Append(c);
-                prevSpace = false;
-            }
-        }
-        if (sb.Length > 0 && sb[^1] == ' ')
-            sb.Length--;
-        return sb.ToString();
-    }
+    // Normalization (the server's prepare_input port) lives in TextNorm, shared with the API
+    // provider's browser-mode title-containment ranking.
 }

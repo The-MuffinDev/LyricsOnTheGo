@@ -888,6 +888,9 @@ public partial class MainWindow : Window
         _lastNp = np;
         _lastNpAt = DateTime.UtcNow;
 
+        // Keep the diagnostics header aware of which app feeds the lookups (and if it's a browser).
+        DiagLog.SetSource(np.SourceAppId, np.IsBrowser, np.DurationMs);
+
         UpdateHeaderTrack();
 
         // Per-song lyrics offset: on a song change (or no track) load that song's saved offset,

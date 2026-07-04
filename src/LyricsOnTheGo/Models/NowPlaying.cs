@@ -7,6 +7,14 @@ namespace LyricsOnTheGo.Models;
 public sealed record NowPlaying
 {
     public bool HasSession { get; init; }
+
+    /// <summary>SMTC SourceAppUserModelId of the session (e.g. "Spotify.exe", "MSEdge"). Empty without a session.</summary>
+    public string SourceAppId { get; init; } = "";
+
+    /// <summary>True when the session comes from a web browser, where the reported artist is
+    /// often the uploader/channel (YouTube) rather than the real artist. Set by SmtcReader.</summary>
+    public bool IsBrowser { get; init; }
+
     public string Title { get; init; } = "";
     public string Artist { get; init; } = "";
     public string Album { get; init; } = "";

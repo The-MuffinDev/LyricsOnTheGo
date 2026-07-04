@@ -451,10 +451,10 @@
                         <TextBlock x:Name="LblOffset" Text="Lyrics offset" Style="{StaticResource FieldLabel}" />
                         <TextBlock x:Name="OffsetValue" Style="{StaticResource ValueLabel}" />
                     </Grid>
-                    <Slider x:Name="OffsetSlider" Style="{StaticResource SettingSlider}" Minimum="-4000" Maximum="4000"
+                    <Slider x:Name="OffsetSlider" Style="{StaticResource SettingSlider}" Minimum="-6000" Maximum="6000"
                             TickFrequency="50" IsSnapToTickEnabled="True" Margin="0,6,0,0" Value="{Binding Offset}" />
                     <TextBlock x:Name="HintOffset"
-                               Text="Delays (+) or advances (−) the active line up to ±4 s. Useful if the lyrics are out of sync."
+                               Text="Delays (+) or advances (−) the active line up to ±6 s. Useful if the lyrics are out of sync."
                                Style="{StaticResource Hint}" />
 
                     <!-- VISIBILITY -->

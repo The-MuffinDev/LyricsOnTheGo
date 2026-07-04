@@ -119,6 +119,34 @@ public static class DiagLog
     public static event Action<DiagCall>? Added;
     public static event Action? Cleared;
 
+    // ---- Current playback source (shown in the diagnostics header) -------------------------
+
+    /// <summary>AUMID of the SMTC session currently feeding lookups ("" when none).</summary>
+    public static string SourceAppId { get; private set; } = "";
+
+    /// <summary>True when the current source was detected as a web browser.</summary>
+    public static bool SourceIsBrowser { get; private set; }
+
+    /// <summary>Duration (ms) of the track currently playing, 0 when unknown.</summary>
+    public static double SourceDurationMs { get; private set; }
+
+    /// <summary>Raised when the SMTC source app or current track duration changes.</summary>
+    public static event Action? SourceChanged;
+
+    /// <summary>Records the app + track duration currently feeding lookups; no-op when unchanged.</summary>
+    public static void SetSource(string appId, bool isBrowser, double durationMs)
+    {
+        appId ??= "";
+        // Compare duration at second granularity so SMTC timeline jitter doesn't spam the event.
+        if (appId == SourceAppId && isBrowser == SourceIsBrowser
+            && (int)(durationMs / 1000) == (int)(SourceDurationMs / 1000))
+            return;
+        SourceAppId = appId;
+        SourceIsBrowser = isBrowser;
+        SourceDurationMs = durationMs;
+        SourceChanged?.Invoke();
+    }
+
     /// <summary>Records the start of a provider call; complete it via the returned handle.</summary>
     public static DiagCall Begin(string track, string provider)
     {

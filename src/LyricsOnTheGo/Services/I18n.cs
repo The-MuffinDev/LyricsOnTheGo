@@ -31,8 +31,8 @@ public static class I18n
         ["alignCenter"]     = ("Center", "Centro"),
         ["grpSync"]         = ("Sync", "Sincronización"),
         ["offset"]          = ("Lyrics offset", "Desfase de la letra"),
-        ["offsetHint"]      = ("Delays (+) or advances (−) the active line up to ±4 s. Useful if the lyrics are out of sync.",
-                               "Retrasa (+) o adelanta (−) la línea activa hasta ±4 s. Útil si la letra va desincronizada."),
+        ["offsetHint"]      = ("Delays (+) or advances (−) the active line up to ±6 s. Useful if the lyrics are out of sync.",
+                               "Retrasa (+) o adelanta (−) la línea activa hasta ±6 s. Útil si la letra va desincronizada."),
         ["grpVisibility"]   = ("Visibility", "Visibilidad"),
         ["autohide"]        = ("Auto-hide header", "Auto-ocultar encabezado"),
         ["autohideHint"]    = ("Hides the top bar. Move the mouse or click the overlay to show it for 2 s and open settings.",
@@ -97,6 +97,10 @@ public static class I18n
         ["diagColDetail"]     = ("Match / detail", "Coincidencia / detalle"),
         ["diagColMs"]         = ("ms", "ms"),
         ["diagWaiting"]       = ("Waiting for the next song change…", "Esperando el siguiente cambio de canción…"),
+        ["diagSource"]        = ("Now playing from", "Reproduciendo desde"),
+        ["diagSourceNone"]    = ("no active session", "sin sesión activa"),
+        ["diagSourceBrowser"] = ("browser (title-only search)", "navegador (búsqueda solo por título)"),
+        ["diagTrackDuration"] = ("track duration", "duración de la canción"),
     };
 
     /// <summary>Current language: "en" (default) or "es".</summary>

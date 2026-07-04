@@ -36,9 +36,9 @@ public sealed class LyricsAggregator
 
     /// <summary>Runs all enabled providers concurrently and returns the best result, recording each
     /// call to <see cref="DiagLog"/> and marking the winner.</summary>
-    public async Task<LyricsResult> FetchAsync(string title, string artist, string album, double durationMs, CancellationToken ct)
+    public async Task<LyricsResult> FetchAsync(LyricsQuery query, CancellationToken ct)
     {
-        string track = Track(title, artist);
+        string track = Track(query.Title, query.Artist);
 
         var enabled = new List<ProviderEntry>();
         foreach (var e in _entries)
@@ -50,7 +50,7 @@ public sealed class LyricsAggregator
 
         var pending = new List<Task<CallResult>>(enabled.Count);
         foreach (var e in enabled)
-            pending.Add(RunAsync(e, track, title, artist, album, durationMs, ct));
+            pending.Add(RunAsync(e, track, query, ct));
 
         CallResult? best = null;
 
@@ -116,7 +116,7 @@ public sealed class LyricsAggregator
 
     /// <summary>Runs a single provider, timing it and recording the outcome to its diagnostics row.</summary>
     private static async Task<CallResult> RunAsync(
-        ProviderEntry entry, string track, string title, string artist, string album, double durationMs, CancellationToken ct)
+        ProviderEntry entry, string track, LyricsQuery query, CancellationToken ct)
     {
         // Register the diagnostics row before the call runs, so it appears immediately as
         // "searching…" with a live elapsed timer rather than only after the provider returns.
@@ -125,7 +125,7 @@ public sealed class LyricsAggregator
         LyricsResult result;
         try
         {
-            result = await entry.Provider.FetchAsync(title, artist, album, durationMs, ct);
+            result = await entry.Provider.FetchAsync(query, ct);
         }
         catch
         {

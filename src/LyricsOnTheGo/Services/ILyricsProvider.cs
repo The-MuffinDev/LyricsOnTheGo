@@ -16,5 +16,5 @@ public interface ILyricsProvider
     string Name { get; }
 
     /// <summary>Looks up lyrics for a track; returns <see cref="LyricsResult.NotFound"/> on any failure.</summary>
-    Task<LyricsResult> FetchAsync(string title, string artist, string album, double durationMs, CancellationToken ct);
+    Task<LyricsResult> FetchAsync(LyricsQuery query, CancellationToken ct);
 }

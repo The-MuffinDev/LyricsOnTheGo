@@ -18,13 +18,13 @@ public sealed record LyricsState(
 /// <summary>
 /// Drives lyrics lookup for the current track: consults the disk cache first (skipped when a local
 /// database is linked, which is fast enough not to need it), then runs a bounded retry loop against
-/// the provider pipeline (max 5 attempts, 2500 ms backoff). Raises <see cref="Changed"/> on the
+/// the provider pipeline (max 2 attempts, 2500 ms backoff). Raises <see cref="Changed"/> on the
 /// calling (UI) thread as the state progresses. Plain text is surfaced only when
 /// <see cref="PlainFallback"/> is on; otherwise the track reports OnlyUnsynced.
 /// </summary>
 public sealed class LyricsController
 {
-    private const int MaxAttempts = 5;
+    private const int MaxAttempts = 2;
     private const int RetryMs = 2500;
 
     private readonly LyricsAggregator _client = new(LyricsProviders.Entries);
@@ -82,10 +82,12 @@ public sealed class LyricsController
             }
         }
 
+        var query = new LyricsQuery(np.Title, np.Artist, np.Album, np.DurationMs, np.IsBrowser);
+
         for (int attempt = 0; attempt < MaxAttempts && !ct.IsCancellationRequested; attempt++)
         {
             LyricsResult result;
-            try { result = await _client.FetchAsync(np.Title, np.Artist, np.Album, np.DurationMs, ct); }
+            try { result = await _client.FetchAsync(query, ct); }
             catch { result = LyricsResult.NotFound; }
 
             if (ct.IsCancellationRequested)

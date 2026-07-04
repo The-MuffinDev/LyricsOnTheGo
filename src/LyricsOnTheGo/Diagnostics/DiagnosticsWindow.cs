@@ -39,6 +39,7 @@ public sealed class DiagnosticsWindow : Window
     private readonly TextBlock _emptyHint;
     private readonly TextBlock _providersLabel;
     private readonly TextBlock _providersHint;
+    private readonly TextBlock _sourceLabel;
     private readonly Button _clearButton;
     private readonly DispatcherTimer _pump;
     private readonly GridViewColumn _cTime, _cTrack, _cProvider, _cResult, _cDetail, _cMs;
@@ -71,6 +72,14 @@ public sealed class DiagnosticsWindow : Window
         {
             Foreground = Muted,
             TextWrapping = TextWrapping.Wrap,
+            FontSize = 11,
+            Margin = new Thickness(12, 0, 12, 6),
+        };
+
+        // Live SMTC source: which app feeds the lookups and whether it's a browser (title-only mode).
+        _sourceLabel = new TextBlock
+        {
+            Foreground = Muted,
             FontSize = 11,
             Margin = new Thickness(12, 0, 12, 6),
         };
@@ -114,6 +123,7 @@ public sealed class DiagnosticsWindow : Window
 
         top.Children.Add(_providersLabel);
         top.Children.Add(_providersHint);
+        top.Children.Add(_sourceLabel);
         top.Children.Add(switches);
         top.Children.Add(new Border { Height = 1, Background = Frozen(0x2A, 0x2A, 0x2A), Margin = new Thickness(0, 2, 0, 6) });
         top.Children.Add(toolbar);
@@ -168,6 +178,7 @@ public sealed class DiagnosticsWindow : Window
 
         DiagLog.Added += OnLogAdded;
         DiagLog.Cleared += OnLogCleared;
+        DiagLog.SourceChanged += OnSourceChanged;
         I18n.Changed += ApplyLang;
         ApplyLang();
 
@@ -185,6 +196,7 @@ public sealed class DiagnosticsWindow : Window
             _pump.Stop();
             DiagLog.Added -= OnLogAdded;
             DiagLog.Cleared -= OnLogCleared;
+            DiagLog.SourceChanged -= OnSourceChanged;
             I18n.Changed -= ApplyLang;
         };
     }
@@ -203,6 +215,24 @@ public sealed class DiagnosticsWindow : Window
 
     private void OnLogCleared() => Dispatcher.BeginInvoke(new Action(() => _rows.Clear()));
 
+    private void OnSourceChanged() => Dispatcher.BeginInvoke(new Action(UpdateSourceLabel));
+
+    private void UpdateSourceLabel()
+    {
+        string app = DiagLog.SourceAppId;
+        string text = app.Length == 0
+            ? $"{I18n.T("diagSource")}: {I18n.T("diagSourceNone")}"
+            : DiagLog.SourceIsBrowser
+                ? $"{I18n.T("diagSource")}: {app} — {I18n.T("diagSourceBrowser")}"
+                : $"{I18n.T("diagSource")}: {app}";
+
+        double sec = DiagLog.SourceDurationMs / 1000.0;
+        if (sec > 0)
+            text += $"  ·  {I18n.T("diagTrackDuration")}: {(int)(sec / 60)}:{(int)sec % 60:00}";
+
+        _sourceLabel.Text = text;
+    }
+
     private void UpdateEmptyHint()
         => _emptyHint.Visibility = _rows.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
 
@@ -220,6 +250,7 @@ public sealed class DiagnosticsWindow : Window
         _cResult.Header = I18n.T("diagColResult");
         _cDetail.Header = I18n.T("diagColDetail");
         _cMs.Header = I18n.T("diagColMs");
+        UpdateSourceLabel();
     }
 
     private static GridViewColumn Column(string header, string path, double width) => new()
