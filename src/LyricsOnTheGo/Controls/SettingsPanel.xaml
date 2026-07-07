@@ -580,20 +580,60 @@
                     </Button>
 
                     <!-- Footer -->
-                    <Border Margin="0,14,0,0" Padding="0,12,0,0" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0">
-                        <TextBlock HorizontalAlignment="Center">
-                            <Hyperlink x:Name="GitHubLink" Click="OnGitHub" Foreground="#8CFFFFFF" TextDecorations="None">
-                                <InlineUIContainer BaselineAlignment="Center">
-                                    <Viewbox Width="13" Height="13" Margin="0,0,5,-1">
+                    <Border Margin="0,14,0,0" Padding="0,14,0,2" BorderBrush="#14FFFFFF" BorderThickness="0,1,0,0">
+                        <StackPanel>
+                            <!-- GitHub -->
+                            <TextBlock HorizontalAlignment="Center">
+                                <Hyperlink x:Name="GitHubLink" Click="OnGitHub" Foreground="#8CFFFFFF" TextDecorations="None">
+                                    <InlineUIContainer BaselineAlignment="Center">
+                                        <Viewbox Width="13" Height="13" Margin="0,0,5,-1">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Stroke="#8CFFFFFF" StrokeThickness="2" StrokeStartLineCap="Round"
+                                                      StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="{x:Null}"
+                                                      Data="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                                            </Canvas>
+                                        </Viewbox>
+                                    </InlineUIContainer><Run>github.com/The-MuffinDev</Run>
+                                </Hyperlink>
+                            </TextBlock>
+
+                            <!-- Buy me a coffee -->
+                            <Button x:Name="CoffeeBtn" Click="OnBuyMeCoffee" Cursor="Hand"
+                                    HorizontalAlignment="Center" Margin="0,13,0,0"
+                                    ToolTip="buymeacoffee.com/TheMuffinDev">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="CoffeeBg" Background="#FFDD00" CornerRadius="8" Padding="16,9">
+                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="CoffeeBg" Property="Background" Value="#FFE838" />
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="CoffeeBg" Property="Background" Value="#E6C700" />
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                                <StackPanel Orientation="Horizontal">
+                                    <Viewbox Width="17" Height="17" Margin="0,0,8,0">
                                         <Canvas Width="24" Height="24">
-                                            <Path Stroke="#8CFFFFFF" StrokeThickness="2" StrokeStartLineCap="Round"
+                                            <Path Stroke="#000000" StrokeThickness="2" StrokeStartLineCap="Round"
                                                   StrokeEndLineCap="Round" StrokeLineJoin="Round" Fill="{x:Null}"
-                                                  Data="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                                                  Data="M6 2v2 M10 2v2 M14 2v2 M18 8h1a4 4 0 0 1 0 8h-1 M3 8h15v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z" />
                                         </Canvas>
                                     </Viewbox>
-                                </InlineUIContainer><Run>github.com/LuisAnchondo</Run>
-                            </Hyperlink>
-                        </TextBlock>
+                                    <TextBlock x:Name="CoffeeLabel" Text="Buy me a coffee"
+                                               Foreground="#000000" FontWeight="SemiBold"
+                                               VerticalAlignment="Center" />
+                                </StackPanel>
+                            </Button>
+
+                            <!-- App version -->
+                            <TextBlock x:Name="VersionText" HorizontalAlignment="Center" Foreground="#5AFFFFFF"
+                                       FontSize="10.5" Margin="0,13,0,0" Text="LyricsOnTheGo v1.2.1" />
+                        </StackPanel>
                     </Border>
                 </StackPanel>
             </ScrollViewer>

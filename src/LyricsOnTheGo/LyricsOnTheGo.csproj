@@ -30,7 +30,7 @@
     <!-- SINGLE SOURCE OF TRUTH for the app version. AssemblyVersion, FileVersion and
          InformationalVersion all derive from this; the User-Agent reads it at runtime; and the
          installer (installer\build-msi.ps1) parses it from here too. Change it only here. -->
-    <Version>1.2.0</Version>
+    <Version>1.2.1</Version>
     <Product>LyricsOnTheGo</Product>
     <Company>Luis Anchondo</Company>
     <Authors>Luis Anchondo</Authors>

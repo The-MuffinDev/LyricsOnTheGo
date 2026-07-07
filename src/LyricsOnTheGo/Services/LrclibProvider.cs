@@ -47,7 +47,7 @@ public sealed class LrclibProvider : ILyricsProvider
         // synced results. Because the three queries run concurrently, this bounds the whole lookup.
         var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         http.DefaultRequestHeaders.UserAgent.ParseAdd(
-            $"LyricsOnTheGo/{AppVersion} (https://github.com/LuisAnchondo)");
+            $"LyricsOnTheGo/{AppVersion} (https://github.com/The-MuffinDev/LyricsOnTheGo)");
         return http;
     }
 

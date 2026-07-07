@@ -30,7 +30,7 @@
 
     <Icon Id="AppIcon" SourceFile="..\lyricsonthego.ico" />
     <Property Id="ARPPRODUCTICON" Value="AppIcon" />
-    <Property Id="ARPURLINFOABOUT" Value="https://github.com/LuisAnchondo" />
+    <Property Id="ARPURLINFOABOUT" Value="https://github.com/The-MuffinDev/LyricsOnTheGo" />
 
     <!-- Branding for the WixUI wizard (paths relative to installer\). -->
     <WixVariable Id="WixUIBannerBmp" Value="wix-banner.bmp" />

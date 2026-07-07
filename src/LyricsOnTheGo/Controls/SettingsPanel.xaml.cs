@@ -85,6 +85,9 @@ public partial class SettingsPanel : UserControl
         UpdateLocalDbUi();
 
         ResetLabel.Text = I18n.T("reset");
+
+        CoffeeLabel.Text = I18n.T("buyMeCoffee");
+        VersionText.Text = $"LyricsOnTheGo v{AppVersion}";
     }
 
     /// <summary>Reflect the linked-database state: current path, status, and Unlink availability.</summary>
@@ -329,8 +332,25 @@ public partial class SettingsPanel : UserControl
 
     private void OnGitHub(object sender, System.Windows.RoutedEventArgs e)
     {
-        const string url = "https://github.com/LuisAnchondo";
+        const string url = "https://github.com/The-MuffinDev";
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
         catch { /* ignore */ }
+    }
+
+    private void OnBuyMeCoffee(object sender, System.Windows.RoutedEventArgs e)
+    {
+        const string url = "https://www.buymeacoffee.com/TheMuffinDev";
+        try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
+        catch { /* ignore */ }
+    }
+
+    /// <summary>App version (major.minor.patch) from the assembly — the single source in the .csproj.</summary>
+    private static string AppVersion
+    {
+        get
+        {
+            var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+            return v is null ? "1.0.0" : $"{v.Major}.{v.Minor}.{v.Build}";
+        }
     }
 }

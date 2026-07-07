@@ -69,6 +69,7 @@ public static class I18n
                                "Ese archivo no es una base de datos LRCLIB válida."),
         ["offsetsCleared"]  = ("Offsets cleared ({n})", "Desfases limpiados ({n})"),
         ["reset"]           = ("Reset to defaults", "Restablecer predeterminados"),
+        ["buyMeCoffee"]     = ("Buy me a coffee", "Cómprame un café"),
         ["openSpotify"]     = ("Play something…", "Reproduce algo…"),
         ["searching"]       = ("Searching for lyrics…", "Buscando letra…"),
         ["notfound"]        = ("Lyrics not found", "No se encontró la letra"),

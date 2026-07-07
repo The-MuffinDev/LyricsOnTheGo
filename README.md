@@ -10,6 +10,10 @@ Native Windows app built with WPF (.NET 8) · No account or login required
 
 <sub>A native Windows rewrite of the original <a href="https://github.com/The-MuffinDev/LyricsOnTheGo-Rust">LyricsOnTheGo</a>.</sub>
 
+<br />
+
+<a href="https://www.buymeacoffee.com/TheMuffinDev" target='_blank'><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=TheMuffinDev&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" /></a>
+
 </div>
 
 ---
@@ -41,7 +45,7 @@ database.
 - **Bilingual UI (English / Spanish)** — English by default, with an in-app EN/ES switch.
 - **Deeply customizable** (persisted): text color (with a screen **eyedropper**), background color
   and opacity, font size, inactive-line dimming, and alignment.
-- **Per-song sync offset** — nudge a song that's slightly out of sync (±4 s; **+** delays the line,
+- **Per-song sync offset** — nudge a song that's slightly out of sync (±6 s; **+** delays the line,
   **−** advances it). The offset is remembered **per song** and resets for the next track, so a
   single tuned song never shifts the rest.
 - **On-disk lyrics cache** — each song is fetched at most once and loads instantly on replay
@@ -52,9 +56,12 @@ database.
   Click-through mode (ignore the mouse) is toggleable and always recoverable from the tray. A pin
   button toggles always-on-top.
 - **Start with Windows** — optional autostart at login, from settings.
-- **Tolerant lyrics matching** — works even when a player reports messy metadata. YouTube, for
-  instance, puts the whole `Artist - Title` in the title and the channel name in the artist; the
-  search falls back to a fuzzy title query and picks the synced version closest in length.
+- **Tolerant lyrics matching** — works even when a player reports messy metadata. When the source is
+  a **browser** (YouTube, etc.), where the channel/uploader is reported as the artist, the app
+  searches **by title only** — both the exact video title and a cleaned version (decorations like
+  "(Official Video)" stripped) — and ranks every candidate by whether its track name appears in the
+  video title, then by closest duration, so it lands the right synced lyrics instead of a wrong-song
+  near-match.
 - **Plain-lyrics fallback** — if only unsynced lyrics exist, they're shown and can be scrolled.
 
 ## The glass
@@ -178,6 +185,12 @@ installer/          WiX v5 MSI (branding, wizard images, build script)
 ## Author
 
 Created by **Luis Anchondo(TheMuffinDev)** — feedback and contributions are welcome.
+
+## Support
+
+If LyricsOnTheGo is useful to you, you can support its development at:
+
+<a href="https://www.buymeacoffee.com/TheMuffinDev">buymeacoffee.com/TheMuffinDev</a>
 
 ## License
 
