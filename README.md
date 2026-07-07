@@ -12,7 +12,7 @@ Native Windows app built with WPF (.NET 8) · No account or login required
 
 <br />
 
-<a href="https://www.buymeacoffee.com/TheMuffinDev" target='_blank'><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=TheMuffinDev&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" /></a>
+<a href="https://www.buymeacoffee.com/TheMuffinDev" target="_blank"><img src="https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=&slug=TheMuffinDev&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff" alt="Buy me a coffee" /></a>
 
 </div>
 
