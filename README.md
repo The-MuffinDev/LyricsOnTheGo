@@ -8,7 +8,7 @@
 
 Native Windows app built with WPF (.NET 8) · No account or login required
 
-<sub>A native Windows rewrite of the original <a href="https://github.com/LuisAnchondo/LyricsOnTheGo-Rust">LyricsOnTheGo</a>.</sub>
+<sub>A native Windows rewrite of the original <a href="https://github.com/The-MuffinDev/LyricsOnTheGo-Rust">LyricsOnTheGo</a>.</sub>
 
 </div>
 
@@ -105,11 +105,11 @@ To build from source you also need the [.NET 8 SDK](https://dotnet.microsoft.com
 ## Install
 
 1. **Download the latest installer** — grab the `LyricsOnTheGo-<version>.msi` from the
-   [**latest release**](https://github.com/LuisAnchondo/LyricsOnTheGo/releases/latest) and run it.
+   [**latest release**](https://github.com/The-MuffinDev/LyricsOnTheGo/releases/latest) and run it.
 2. Open your music player and start a song. That's all.
 
 Every version and its release notes are on the
-[**Releases**](https://github.com/LuisAnchondo/LyricsOnTheGo/releases) page.
+[**Releases**](https://github.com/The-MuffinDev/LyricsOnTheGo/releases) page.
 
 ## Offline mode — local LRCLIB database (optional)
 
@@ -177,7 +177,7 @@ installer/          WiX v5 MSI (branding, wizard images, build script)
 
 ## Author
 
-Created by **Luis Anchondo** — feedback and contributions are welcome.
+Created by **Luis Anchondo(TheMuffinDev)** — feedback and contributions are welcome.
 
 ## License
 
